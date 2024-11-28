@@ -778,11 +778,8 @@ func MakeWhereQueryFromSearch(ctx context.Context, db *gorm.DB, query string) (*
 				}
 				tx = where(tx, "NOT "+query, v1, v2)
 			} else {
-				query, v1, v2, v3, err := parseNonAtomizedToken(token[1:])
-				if err != nil {
-					return nil, err
-				}
-				tx = tx.Where("NOT "+query, v1, v2, v3)
+				query, v1 := parseNonAtomizedToken(token[1:])
+				tx = tx.Where("NOT "+query, v1)
 			}
 		} else if containsUnescaped(token, ":") {
 			query, v1, v2, err := parseAtomizedToken(ctx, token)
@@ -791,11 +788,8 @@ func MakeWhereQueryFromSearch(ctx context.Context, db *gorm.DB, query string) (*
 			}
 			tx = where(tx, query, v1, v2)
 		} else {
-			query, v1, v2, v3, err := parseNonAtomizedToken(token)
-			if err != nil {
-				return nil, err
-			}
-			tx = tx.Where(query, v1, v2, v3)
+			query, v1 := parseNonAtomizedToken(token)
+			tx = tx.Where(query, v1)
 		}
 	}
 	return tx, nil
@@ -845,9 +839,9 @@ func retryingSearch(ctx context.Context, db *gorm.DB, query string, limit, offse
 	return historyEntries, nil
 }
 
-func parseNonAtomizedToken(token string) (string, any, any, any, error) {
+func parseNonAtomizedToken(token string) (string, string) {
 	wildcardedToken := "%" + unescape(token) + "%"
-	return "(command LIKE ? OR hostname LIKE ? OR current_working_directory LIKE ?)", wildcardedToken, wildcardedToken, wildcardedToken, nil
+	return "(command LIKE ?)", wildcardedToken
 }
 
 func parseAtomizedToken(ctx context.Context, token string) (string, any, any, error) {
